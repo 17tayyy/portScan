@@ -43,11 +43,21 @@ function scan_port() {
     local timeout=$3
 
     if timeout $timeout bash -c "</dev/tcp/$host/$port" 2>/dev/null; then
-        echo -e "${GREEN}[+] Port $port is OPEN on $host${RESET}"
         echo "$port" >> "$temp_file"
-    else
-        echo -e "${RED}[-] Port $port is CLOSED or FILTERED on $host${RESET}"
     fi
+}
+
+function show_progress() {
+    local progress=$1
+    local total=$2
+    local width=50  # Anchura de la barra de progreso
+    local filled=$(( (progress * width) / total ))
+    local empty=$(( width - filled ))
+
+    printf "\r["
+    for ((i=0; i<filled; i++)); do printf "#"; done
+    for ((i=0; i<empty; i++)); do printf " "; done
+    printf "] %d/%d ports scanned" "$progress" "$total"
 }
 
 host=""
@@ -104,11 +114,28 @@ total_ports=${#expanded_ports[@]}
 current_port=0
 
 echo -e "${YELLOW}Scanning ports on $host with a timeout of $timeout seconds...${RESET}"
+
+# Limitar la cantidad de escaneos simultáneos
+max_parallel=100
 for port in "${expanded_ports[@]}"; do
-    echo -e "${YELLOW}Scanning port $port...${RESET}"
-    scan_port $host $port $timeout
+    scan_port $host $port $timeout &  # Ejecuta en segundo plano
     current_port=$((current_port + 1))
+
+    # Mostrar la barra de progreso
+    show_progress "$current_port" "$total_ports"
+
+    # Si hay demasiados procesos en paralelo, esperamos a que terminen algunos
+    if (( current_port % max_parallel == 0 )); then
+        wait
+    fi
 done
+
+# Esperar a que terminen todos los procesos en segundo plano
+wait
+
+# Muestra el progreso completo al finalizar
+show_progress "$total_ports" "$total_ports"
+echo ""
 
 echo -e "${BLUE}Scan complete.${RESET}"
 if [[ -s $temp_file ]]; then
@@ -117,4 +144,6 @@ if [[ -s $temp_file ]]; then
 else
     echo -e "${RED}No open ports found.${RESET}"
 fi
+
+rm -f "$temp_file"
 
