@@ -50,7 +50,7 @@ function scan_port() {
 function show_progress() {
     local progress=$1
     local total=$2
-    local width=50  # Anchura de la barra de progreso
+    local width=50
     local filled=$(( (progress * width) / total ))
     local empty=$(( width - filled ))
 
@@ -115,25 +115,20 @@ current_port=0
 
 echo -e "${YELLOW}Scanning ports on $host with a timeout of $timeout seconds...${RESET}"
 
-# Limitar la cantidad de escaneos simultáneos
 max_parallel=100
 for port in "${expanded_ports[@]}"; do
-    scan_port $host $port $timeout &  # Ejecuta en segundo plano
+    scan_port $host $port $timeout & 
     current_port=$((current_port + 1))
 
-    # Mostrar la barra de progreso
     show_progress "$current_port" "$total_ports"
 
-    # Si hay demasiados procesos en paralelo, esperamos a que terminen algunos
     if (( current_port % max_parallel == 0 )); then
         wait
     fi
 done
 
-# Esperar a que terminen todos los procesos en segundo plano
 wait
 
-# Muestra el progreso completo al finalizar
 show_progress "$total_ports" "$total_ports"
 echo ""
 
