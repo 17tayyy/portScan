@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if ! command -v nc &> /dev/null; then
-    echo "${RED} Install Netcat and try again.${RESET}"
+    echo "${RED}[!] Install Netcat and try again.${RESET}"
     exit 1
 fi
 
@@ -30,7 +30,7 @@ function show_usage() {
 }
 
 function handle_interrupt() {
-    echo -e "\n${RED}Scan interrupted.${RESET}"
+    echo -e "\n${RED}[!] Scan interrupted.${RESET}"
     rm -f "$temp_file"
     exit 1
 }
@@ -57,7 +57,7 @@ function show_progress() {
     printf "\r["
     for ((i=0; i<filled; i++)); do printf "#"; done
     for ((i=0; i<empty; i++)); do printf " "; done
-    printf "] %d/%d ports scanned" "$progress" "$total"
+    printf "] %d/%d Ports scanned" "$progress" "$total"
 }
 
 host=""
@@ -113,9 +113,9 @@ done
 total_ports=${#expanded_ports[@]}
 current_port=0
 
-echo -e "${YELLOW}Scanning ports on $host with a timeout of $timeout seconds...${RESET}"
+echo -e "${YELLOW}[+] Scanning ports on $host with a timeout of $timeout seconds...${RESET}"
 
-max_parallel=100
+max_parallel=1000
 for port in "${expanded_ports[@]}"; do
     scan_port $host $port $timeout & 
     current_port=$((current_port + 1))
@@ -132,12 +132,12 @@ wait
 show_progress "$total_ports" "$total_ports"
 echo ""
 
-echo -e "${BLUE}Scan complete.${RESET}"
+echo -e "${BLUE}[+] Scan complete.${RESET}"
 if [[ -s $temp_file ]]; then
-    echo -e "${GREEN}Open ports:${RESET}"
+    echo -e "${GREEN}[+] Open ports:${RESET}"
     cat "$temp_file"
 else
-    echo -e "${RED}No open ports found.${RESET}"
+    echo -e "${RED}[+] No open ports found.${RESET}"
 fi
 
 rm -f "$temp_file"
